@@ -1,6 +1,6 @@
 {
   "name": "@www778878net/memcache78",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "koa78 memcache78",
   "main": "dist/index.js",
   "types": "src/index.ts",
@@ -10,7 +10,7 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/www778878net/koa78-memcache78.git"
-  }, 
+  },
   "license": "Apache-2.0",
   "files": [
     "src",
