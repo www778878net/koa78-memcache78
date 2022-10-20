@@ -2,18 +2,19 @@ const genericPool = require('generic-pool');
 const Util = require('util');
 const MemCache = require('memcached');
 export default class MemCache78 {
-    host: string;
-    port: number;
-    max: number;
-    _pool: any;
-    local: string;//根据地点划分
+    host: string="";
+    port: number=11211;
+    max: number=10;
+    _pool: any=null;
+    local: string="";//根据地点划分
     /*
      * small
      *let  config={ }
      * 
      */
     constructor(config: any) {
-
+        if (config == null)
+            return;
         this.host = config["host"] || "127.0.0.1"; 
         this.port = config["port"] || 11211;
         this.max = config["max"] || 100;//线程池
@@ -54,6 +55,7 @@ export default class MemCache78 {
         var self = this;
         key += self.local;
         return new Promise((resolve, reject) => {
+
             self._pool.acquire().then(function (client) {
 
                 client.get(key, function (err, reply) {

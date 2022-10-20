@@ -1,6 +1,6 @@
 'use strict';
 const expect = require('chai').expect;
-const MemCache = require('../dist/index').default;
+const MemCache78 = require('../dist/index').default;
 var iconv = require('iconv-lite');
 var fs = require('fs'); 
 console.log(process.argv)
@@ -18,9 +18,17 @@ function loadjson(filepath) {
     }
     return data;
 }
-let memcached78 = new MemCache(config["memcached"]);
+let memcached78 = new MemCache78(config["memcached"]);
 
-
+describe('test null ', () => {
+    it(' return anything', () => {
+        let testclient = new MemCache78(null)
+        //no catch err
+        const result = 1;
+        expect(result).to.equal(1);
+        //done(); // Í¨ÖªMocha²âÊÔ½áÊø
+    });
+});
 describe('test set  ', () => {
     it(' return true', () => { 
         return memcached78.set("testitem", 1, 60).then(function (result) {
