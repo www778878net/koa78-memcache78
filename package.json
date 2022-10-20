@@ -23,7 +23,7 @@
   ],
   "scripts": {
     "postpublish": "git push origin --all && git push origin --tags",
-    "postversion": "npm publish",
+    "postversion": "npm publish --access public",
     "preversion": "npm test",
     "test": "tsc   && mocha  --config  config.json  --reporter spec  -t 5000  --exit",
     "build": "tsc  "
