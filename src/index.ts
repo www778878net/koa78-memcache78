@@ -13,7 +13,7 @@ export default class MemCache78 {
      * 
      */
     constructor(config: any) {
-        if (config == null)
+        if (!config )
             return;
         this.host = config["host"] || "127.0.0.1"; 
         this.port = config["port"] || 11211;

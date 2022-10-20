@@ -15,7 +15,7 @@ class MemCache78 {
         this.max = 10;
         this._pool = null;
         this.local = ""; //���ݵص㻮��
-        if (config == null)
+        if (!config)
             return;
         this.host = config["host"] || "127.0.0.1";
         this.port = config["port"] || 11211;
