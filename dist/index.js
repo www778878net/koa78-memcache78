@@ -11,7 +11,7 @@ class MemCache78 {
      */
     constructor(config) {
         this.host = "";
-        this.port = 11211;
+        this.port = 0;
         this.max = 10;
         this._pool = null;
         this.local = ""; //���ݵص㻮��
@@ -50,6 +50,10 @@ class MemCache78 {
         var self = this;
         key += self.local;
         return new Promise((resolve, reject) => {
+            if (self._pool == null) {
+                resolve("pool null");
+                return;
+            }
             self._pool.acquire().then(function (client) {
                 client.get(key, function (err, reply) {
                     self._pool.release(client);
@@ -89,6 +93,10 @@ class MemCache78 {
         add = add || 1;
         var self = this;
         return new Promise((resolve, reject) => {
+            if (self._pool == null) {
+                resolve("pool null");
+                return;
+            }
             self._pool.acquire().then(function (client) {
                 client.incr(key + self.local, add, (err, reply) => {
                     self._pool.release(client);
@@ -119,6 +127,10 @@ class MemCache78 {
         var self = this;
         key += self.local;
         return new Promise((resolve, reject) => {
+            if (self._pool == null) {
+                resolve("pool null");
+                return;
+            }
             value = JSON.stringify(value); //�ɻ����         
             self._pool.acquire().then(function (client) {
                 client.set(key, value, sec, (err, reply) => {
@@ -140,8 +152,8 @@ class MemCache78 {
         var self = this;
         key += self.local;
         return new Promise((resolve, reject) => {
-            if (self.port === 0) {
-                resolve(undefined);
+            if (self._pool == null) {
+                resolve("");
                 return;
             }
             //var client = self._getclient();
@@ -164,8 +176,8 @@ class MemCache78 {
         let self = this;
         key += self.local;
         return new Promise((resolve, reject) => {
-            if (this.port === 0) {
-                resolve(undefined);
+            if (self._pool == null) {
+                resolve("pool null");
                 return;
             }
             self._pool.acquire().then(function (client) {
@@ -190,8 +202,8 @@ class MemCache78 {
         var self = this;
         key += self.local;
         return new Promise((resolve, reject) => {
-            if (this.port === 0) {
-                resolve(undefined);
+            if (self._pool == null) {
+                resolve("pool null");
                 return;
             }
             self._pool.acquire().then(function (client) {
@@ -214,11 +226,10 @@ class MemCache78 {
         let self = this;
         key += self.local;
         return new Promise((resolve, reject) => {
-            if (self.port === 0) {
-                resolve(undefined);
+            if (self._pool == null) {
+                resolve("pool null");
                 return;
             }
-            //var client = self._getclient();
             self._pool.acquire().then(function (client) {
                 client.get(key, (err, reply) => {
                     self._pool.release(client);

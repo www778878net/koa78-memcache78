@@ -3,7 +3,7 @@ const Util = require('util');
 const MemCache = require('memcached');
 export default class MemCache78 {
     host: string="";
-    port: number=11211;
+    port: number=0;
     max: number=10;
     _pool: any=null;
     local: string="";//根据地点划分
@@ -55,7 +55,10 @@ export default class MemCache78 {
         var self = this;
         key += self.local;
         return new Promise((resolve, reject) => {
-
+            if (self._pool == null) {
+                resolve("pool null")
+                return;
+            }
             self._pool.acquire().then(function (client) {
 
                 client.get(key, function (err, reply) {
@@ -101,6 +104,10 @@ export default class MemCache78 {
         var self = this;
 
         return new Promise((resolve, reject) => {
+            if (self._pool == null) {
+                resolve("pool null")
+                return;
+            }
             self._pool.acquire().then(function (client) {
                 client.incr(key + self.local, add, (err, reply) => {
                     self._pool.release(client);
@@ -134,6 +141,10 @@ export default class MemCache78 {
         var self = this;
         key += self.local;
         return new Promise((resolve, reject) => {
+            if (self._pool == null) {
+                resolve("pool null")
+                return;
+            }
             value = JSON.stringify(value);//可缓存表         
             self._pool.acquire().then(function (client) {
                 client.set(key, value, sec, (err, reply) => {
@@ -157,9 +168,9 @@ export default class MemCache78 {
       
         var self = this;
         key += self.local;
-        return new Promise((resolve, reject) => {
-            if (self.port === 0) {
-                resolve(undefined);
+        return new Promise((resolve, reject) => { 
+            if (self._pool == null) {
+                resolve("")
                 return;
             }
             //var client = self._getclient();
@@ -183,12 +194,11 @@ export default class MemCache78 {
     del(key: string): any {
         let self = this;
         key += self.local;
-        return new Promise((resolve, reject) => {
-            if (this.port === 0) {
-                resolve(undefined);
+        return new Promise((resolve, reject) => { 
+            if (self._pool == null) {
+                resolve("pool null")
                 return;
             }
-
             self._pool.acquire().then(function (client) {
                 //var client = self._getclient();
                 client.del(key, (err, reply) => {
@@ -214,8 +224,8 @@ export default class MemCache78 {
         var self = this;
         key += self.local;
         return new Promise((resolve, reject) => {
-            if (this.port === 0) {
-                resolve(undefined);
+            if (self._pool == null) {
+                resolve("pool null")
                 return;
             }
         
@@ -244,12 +254,12 @@ export default class MemCache78 {
         key += self.local;
         return new Promise((resolve, reject) => {
 
-            if (self.port === 0) {
-                resolve(undefined);
+            if (self._pool == null) {
+                resolve("pool null")
                 return;
             }
 
-            //var client = self._getclient();
+          
 
             self._pool.acquire().then(function (client) {
                 client.get(key, (err, reply: string) => {
