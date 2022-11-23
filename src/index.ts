@@ -56,7 +56,7 @@ export default class MemCache78 {
         key += self.local;
         return new Promise((resolve, reject) => {
             if (self._pool == null) {
-                resolve("pool null")
+                resolve("")
                 return;
             }
             self._pool.acquire().then(function (client) {
@@ -105,7 +105,7 @@ export default class MemCache78 {
 
         return new Promise((resolve, reject) => {
             if (self._pool == null) {
-                resolve("pool null")
+                resolve("")
                 return;
             }
             self._pool.acquire().then(function (client) {
@@ -142,7 +142,7 @@ export default class MemCache78 {
         key += self.local;
         return new Promise((resolve, reject) => {
             if (self._pool == null) {
-                resolve("pool null")
+                resolve("")
                 return;
             }
             value = JSON.stringify(value);//¿É»º´æ±í         
@@ -196,7 +196,7 @@ export default class MemCache78 {
         key += self.local;
         return new Promise((resolve, reject) => { 
             if (self._pool == null) {
-                resolve("pool null")
+                resolve("")
                 return;
             }
             self._pool.acquire().then(function (client) {
@@ -225,7 +225,7 @@ export default class MemCache78 {
         key += self.local;
         return new Promise((resolve, reject) => {
             if (self._pool == null) {
-                resolve("pool null")
+                resolve("")
                 return;
             }
         
@@ -255,7 +255,7 @@ export default class MemCache78 {
         return new Promise((resolve, reject) => {
 
             if (self._pool == null) {
-                resolve("pool null")
+                resolve("")
                 return;
             }
 
