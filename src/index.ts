@@ -1,284 +1,76 @@
-const genericPool = require('generic-pool');
-const Util = require('util');
-const MemCache = require('memcached');
-export default class MemCache78 {
-    host: string="";
-    port: number=0;
-    max: number=10;
-    _pool: any=null;
-    local: string="";//根据地点划分
-    /*
-     * small
-     *let  config={ }
-     * 
-     */
-    constructor(config: any) {
-        if (!config )
-            return;
-        this.host = config["host"] || "127.0.0.1"; 
-        this.port = config["port"] || 11211;
-        this.max = config["max"] || 100;//线程池
-        this.local = config["local"] || "";//一个memcached可支持N个koa78框架 用这个区分
- 
-        //用不了连接池 一用就报错
-        //this.client=new MemCache(host+':'+port, {poolSize:500,reconnect:1000,retry:1000});
-        let self = this;
-     
-        //this._pool = new Pool({
-        this._pool = genericPool.createPool({
-            create: function () {
+import { Client, MemcachedResponse } from 'memjs';
 
-                return new MemCache(self.host + ':' + self.port, {});
+class MemCache78 {
+	private client: Client;
+	private local: string;
 
-            },
-            destroy: function (client) {
+	constructor(config: any) {
+		const servers = config.host ? `${config.host}:${config.port || 11211}` : '127.0.0.1:11211';
+		this.client = Client.create(servers, {
+			retries: 10,
+			retry_delay: 1000,
+			expires: config.expires || 0,
+			poolSize: config.max || 10,
+		});
+		this.local = config.local || '';
+	}
 
-                if (client.connected) {
-                    try {
-                        client.end();
-                    }
-                    catch (err) {
-                        console.log('Failed to memcached connection: ' + err);
-                    }
-                }
-            }
-        }, {
-                max: self.max,
-                min: 2,
-                idleTimeoutMillis: 3000
-            });
+	private async handleError<T>(promise: Promise<T>): Promise<T | null> {
+		try {
+			return await promise;
+		} catch (err) {
+			console.error(`MemCache78 Error: ${err}`);
+			return null;
+		}
+	}
 
-    }
+	async tbget(key: string, debug: boolean = false): Promise<any> {
+		key += this.local;
+		const result: MemcachedResponse | null = await this.handleError(this.client.get(key));
+		if (result && result.value) {
+			const reply = result.value.toString();
+			if (debug) {
+				console.log(`memcache78 tbget: ${key} value: ${reply}`);
+			}
+			return JSON.parse(reply);
+		}
+		return null;
+	}
 
-    tbget(key: string, debug?: boolean): Promise<any> {
-        debug = debug || false;
-        var self = this;
-        key += self.local;
-        return new Promise((resolve, reject) => {
-            if (self._pool == null) {
-                resolve("")
-                return;
-            }
-            self._pool.acquire().then(function (client) {
+	async tbset(key: string, value: any, sec: number = 86400): Promise<void> {
+		key += this.local;
+		const stringValue = JSON.stringify(value);
+		await this.handleError(this.client.set(key, stringValue, { expires: sec }));
+	}
 
-                client.get(key, function (err, reply) {
-                    self._pool.release(client);
-                    if (err) {
-                        console.error('MemCache78 tbgettData Error: ' + Util.inspect(err));
-                        reject(new Error(err));
-                        return;
-                    }
-                    if (debug) {
-                        console.log("memcache78 tbget:" + key + " value:" + reply);
-                    }
-                    //qq云没有返回undef
-                    if (reply) {
-                        try {
-                            reply = JSON.parse(reply);
-                        } catch (e) {
-                            console.error('MemCache78 tbgettData jsonError: ' + Util.inspect(e) + reply);
-                            self.del(key);
-                        }
-                    }
+	async del(key: string): Promise<void> {
+		key += this.local;
+		await this.handleError(this.client.delete(key));
+	}
 
-                    resolve(reply);
-                });
-            })
+	async incr(key: string, sec: number = 86400, add: number = 1): Promise<number> {
+		key += this.local;
+		const result: MemcachedResponse | null = await this.handleError(this.client.increment(key, add));
+		if (result && result.value !== null) {
+			return result.value;
+		} else {
+			await this.tbset(key, 1, sec);
+			return 1;
+		}
+	}
 
+	async get(key: string, debug: boolean = false): Promise<any> {
+		return this.tbget(key, debug);
+	}
 
-        }).catch((e) => {
-            console.log(e);
-        });
+	async set(key: string, value: any, sec: number = 86400): Promise<void> {
+		return this.tbset(key, value, sec);
+	}
 
-    };
-
-    //方便 调试
-    _getclient(): any {
-        let self = this;
-        return new MemCache(self.host + ':' + self.port, { poolSize: 2 });
-    }
-
-    incr(key: string, sec?: number, add?: number): any {
-        sec = sec || 86400;
-        add = add || 1;
-        var self = this;
-
-        return new Promise((resolve, reject) => {
-            if (self._pool == null) {
-                resolve("")
-                return;
-            }
-            self._pool.acquire().then(function (client) {
-                client.incr(key + self.local, add, (err, reply) => {
-                    self._pool.release(client);
-                    if (err == undefined) err = 0;
-                    if (err) {
-                        self.set(key, 1, sec);
-                        reply = 1;
-                        resolve(reply);
-                        //reject(new Error(err));
-                        //console.error(key + self.local+ 'MemCache78 increment Error: ' + err);
-                    }
-                    else {
-                        //阿里云 qq云没有会返回false
-                        if (!reply) {
-                            self.set(key, 1, sec);
-                            reply = 1;
-                        }
-                        resolve(reply);
-                    }
-                });
-            });
-
-        });
-
-
-
-    };
-
-    tbset(key: string, value: any, sec?: number): any {
-        sec = sec || 86400;
-        var self = this;
-        key += self.local;
-        return new Promise((resolve, reject) => {
-            if (self._pool == null) {
-                resolve("")
-                return;
-            }
-            value = JSON.stringify(value);//可缓存表         
-            self._pool.acquire().then(function (client) {
-                client.set(key, value, sec, (err, reply) => {
-                    self._pool.release(client);
-                    if (err) {
-                        reject(new Error(err));
-                        console.error('MemCache78 Set Error: ' + err.val.toString());
-                        return;
-                    }
-                    //这里返回值是空
-                    resolve(reply);
-                });
-            })
-
-
-        });
-    };
-
-    add(key: string, value: string | number, sec?: number): any {
-        sec = sec || 86400;
-      
-        var self = this;
-        key += self.local;
-        return new Promise((resolve, reject) => { 
-            if (self._pool == null) {
-                resolve("")
-                return;
-            }
-            //var client = self._getclient();
-            self._pool.acquire().then(function (client) {
-                client.add(key, value, sec, (err, reply) => {
-                    self._pool.release(client);
-                    if (err) {
-                        resolve("");
-                        //console.log('memcache add Error: ' + err + key + value);
-                        return;
-                    }
-                    else
-                        resolve(reply);
-                });
-            })
-        });
-    };
-
-
-
-    del(key: string): any {
-        let self = this;
-        key += self.local;
-        return new Promise((resolve, reject) => { 
-            if (self._pool == null) {
-                resolve("")
-                return;
-            }
-            self._pool.acquire().then(function (client) {
-                //var client = self._getclient();
-                client.del(key, (err, reply) => {
-                    self._pool.release(client);
-                    if (err) {
-                        resolve(undefined);
-                        //def.reject(new Error(err));
-                        console.error('memcache78 delData Error: ' + err);
-                    }
-                    else {
-                        resolve(reply);
-                    }
-                });
-            })
-        });
-    };
-
-
-
-    set(key: string, value: string | number, sec?: number): any {
-        sec = sec || 86400;
-        
-        var self = this;
-        key += self.local;
-        return new Promise((resolve, reject) => {
-            if (self._pool == null) {
-                resolve("")
-                return;
-            }
-        
-            self._pool.acquire().then(function (client) {
-            
-                client.set(key, value, sec, (err, reply) => {
-                    self._pool.release(client);
-                  
-                    if (err) {
-                        reject(err);
-                        console.error('memcache SetData Error: ' + err + key + value);
-                        return;
-                    }
-                    //reply=true
-
-                    resolve(reply);
-                });
-            })
-        });
-    };
-
-
-    get(key: string, debug?: boolean): any {
-        debug = debug || false;
-        let self = this;
-        key += self.local;
-        return new Promise((resolve, reject) => {
-
-            if (self._pool == null) {
-                resolve("")
-                return;
-            }
-
-          
-
-            self._pool.acquire().then(function (client) {
-                client.get(key, (err, reply: string) => {
-                    self._pool.release(client);
-                    if (err) {
-                        reject(err);
-                        console.error('memcache GetData Error: ' + err + key);
-                        return;
-                    }
-                    //qq云没有返回undef
-                    //if (reply == undefined) reply = null;
-                    //unde 和null都可以用!reply判断
-                    if (debug) {
-                        console.log("memcache78 get:" + key + " value:" + reply);
-                    }
-                    resolve(reply);
-                });
-            });
-
-        });
-    };
+	async add(key: string, value: any, sec: number = 86400): Promise<void> {
+		key += this.local;
+		await this.handleError(this.client.add(key, value, { expires: sec }));
+	}
 }
+
+export default MemCache78;

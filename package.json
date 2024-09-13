@@ -42,6 +42,7 @@
   },
   "dependencies": {
     "generic-pool": "^3.8.2",
-    "memcached": "^2.2.2"
+    "memcached": "^2.2.2",
+    "memjs": "^1.3.2"
   }
 }

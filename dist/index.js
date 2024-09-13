@@ -1,255 +1,93 @@
 "use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-const genericPool = require('generic-pool');
-const Util = require('util');
-const MemCache = require('memcached');
+const memjs_1 = require("memjs");
 class MemCache78 {
-    /*
-     * small
-     *let  config={ }
-     *
-     */
     constructor(config) {
-        this.host = "";
-        this.port = 0;
-        this.max = 10;
-        this._pool = null;
-        this.local = ""; //���ݵص㻮��
-        if (!config)
-            return;
-        this.host = config["host"] || "127.0.0.1";
-        this.port = config["port"] || 11211;
-        this.max = config["max"] || 100; //�̳߳�
-        this.local = config["local"] || ""; //һ��memcached��֧��N��koa78��� ���������
-        //�ò������ӳ� һ�þͱ���
-        //this.client=new MemCache(host+':'+port, {poolSize:500,reconnect:1000,retry:1000});
-        let self = this;
-        //this._pool = new Pool({
-        this._pool = genericPool.createPool({
-            create: function () {
-                return new MemCache(self.host + ':' + self.port, {});
-            },
-            destroy: function (client) {
-                if (client.connected) {
-                    try {
-                        client.end();
-                    }
-                    catch (err) {
-                        console.log('Failed to memcached connection: ' + err);
-                    }
+        const servers = config.host ? `${config.host}:${config.port || 11211}` : '127.0.0.1:11211';
+        this.client = memjs_1.Client.create(servers, {
+            retries: 10,
+            retry_delay: 1000,
+            expires: config.expires || 0,
+            poolSize: config.max || 10,
+        });
+        this.local = config.local || '';
+    }
+    handleError(promise) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                return yield promise;
+            }
+            catch (err) {
+                console.error(`MemCache78 Error: ${err}`);
+                return null;
+            }
+        });
+    }
+    tbget(key_1) {
+        return __awaiter(this, arguments, void 0, function* (key, debug = false) {
+            key += this.local;
+            const result = yield this.handleError(this.client.get(key));
+            if (result && result.value) {
+                const reply = result.value.toString();
+                if (debug) {
+                    console.log(`memcache78 tbget: ${key} value: ${reply}`);
                 }
+                return JSON.parse(reply);
             }
-        }, {
-            max: self.max,
-            min: 2,
-            idleTimeoutMillis: 3000
+            return null;
         });
     }
-    tbget(key, debug) {
-        debug = debug || false;
-        var self = this;
-        key += self.local;
-        return new Promise((resolve, reject) => {
-            if (self._pool == null) {
-                resolve("");
-                return;
-            }
-            self._pool.acquire().then(function (client) {
-                client.get(key, function (err, reply) {
-                    self._pool.release(client);
-                    if (err) {
-                        console.error('MemCache78 tbgettData Error: ' + Util.inspect(err));
-                        reject(new Error(err));
-                        return;
-                    }
-                    if (debug) {
-                        console.log("memcache78 tbget:" + key + " value:" + reply);
-                    }
-                    //qq��û�з���undef
-                    if (reply) {
-                        try {
-                            reply = JSON.parse(reply);
-                        }
-                        catch (e) {
-                            console.error('MemCache78 tbgettData jsonError: ' + Util.inspect(e) + reply);
-                            self.del(key);
-                        }
-                    }
-                    resolve(reply);
-                });
-            });
-        }).catch((e) => {
-            console.log(e);
+    tbset(key_1, value_1) {
+        return __awaiter(this, arguments, void 0, function* (key, value, sec = 86400) {
+            key += this.local;
+            const stringValue = JSON.stringify(value);
+            yield this.handleError(this.client.set(key, stringValue, { expires: sec }));
         });
     }
-    ;
-    //���� ����
-    _getclient() {
-        let self = this;
-        return new MemCache(self.host + ':' + self.port, { poolSize: 2 });
-    }
-    incr(key, sec, add) {
-        sec = sec || 86400;
-        add = add || 1;
-        var self = this;
-        return new Promise((resolve, reject) => {
-            if (self._pool == null) {
-                resolve("");
-                return;
-            }
-            self._pool.acquire().then(function (client) {
-                client.incr(key + self.local, add, (err, reply) => {
-                    self._pool.release(client);
-                    if (err == undefined)
-                        err = 0;
-                    if (err) {
-                        self.set(key, 1, sec);
-                        reply = 1;
-                        resolve(reply);
-                        //reject(new Error(err));
-                        //console.error(key + self.local+ 'MemCache78 increment Error: ' + err);
-                    }
-                    else {
-                        //������ qq��û�л᷵��false
-                        if (!reply) {
-                            self.set(key, 1, sec);
-                            reply = 1;
-                        }
-                        resolve(reply);
-                    }
-                });
-            });
-        });
-    }
-    ;
-    tbset(key, value, sec) {
-        sec = sec || 86400;
-        var self = this;
-        key += self.local;
-        return new Promise((resolve, reject) => {
-            if (self._pool == null) {
-                resolve("");
-                return;
-            }
-            value = JSON.stringify(value); //�ɻ����         
-            self._pool.acquire().then(function (client) {
-                client.set(key, value, sec, (err, reply) => {
-                    self._pool.release(client);
-                    if (err) {
-                        reject(new Error(err));
-                        console.error('MemCache78 Set Error: ' + err.val.toString());
-                        return;
-                    }
-                    //���ﷵ��ֵ�ǿ�
-                    resolve(reply);
-                });
-            });
-        });
-    }
-    ;
-    add(key, value, sec) {
-        sec = sec || 86400;
-        var self = this;
-        key += self.local;
-        return new Promise((resolve, reject) => {
-            if (self._pool == null) {
-                resolve("");
-                return;
-            }
-            //var client = self._getclient();
-            self._pool.acquire().then(function (client) {
-                client.add(key, value, sec, (err, reply) => {
-                    self._pool.release(client);
-                    if (err) {
-                        resolve("");
-                        //console.log('memcache add Error: ' + err + key + value);
-                        return;
-                    }
-                    else
-                        resolve(reply);
-                });
-            });
-        });
-    }
-    ;
     del(key) {
-        let self = this;
-        key += self.local;
-        return new Promise((resolve, reject) => {
-            if (self._pool == null) {
-                resolve("");
-                return;
-            }
-            self._pool.acquire().then(function (client) {
-                //var client = self._getclient();
-                client.del(key, (err, reply) => {
-                    self._pool.release(client);
-                    if (err) {
-                        resolve(undefined);
-                        //def.reject(new Error(err));
-                        console.error('memcache78 delData Error: ' + err);
-                    }
-                    else {
-                        resolve(reply);
-                    }
-                });
-            });
+        return __awaiter(this, void 0, void 0, function* () {
+            key += this.local;
+            yield this.handleError(this.client.delete(key));
         });
     }
-    ;
-    set(key, value, sec) {
-        sec = sec || 86400;
-        var self = this;
-        key += self.local;
-        return new Promise((resolve, reject) => {
-            if (self._pool == null) {
-                resolve("");
-                return;
+    incr(key_1) {
+        return __awaiter(this, arguments, void 0, function* (key, sec = 86400, add = 1) {
+            key += this.local;
+            const result = yield this.handleError(this.client.increment(key, add));
+            if (result && result.value !== null) {
+                return result.value;
             }
-            self._pool.acquire().then(function (client) {
-                client.set(key, value, sec, (err, reply) => {
-                    self._pool.release(client);
-                    if (err) {
-                        reject(err);
-                        console.error('memcache SetData Error: ' + err + key + value);
-                        return;
-                    }
-                    //reply=true
-                    resolve(reply);
-                });
-            });
+            else {
+                yield this.tbset(key, 1, sec);
+                return 1;
+            }
         });
     }
-    ;
-    get(key, debug) {
-        debug = debug || false;
-        let self = this;
-        key += self.local;
-        return new Promise((resolve, reject) => {
-            if (self._pool == null) {
-                resolve("");
-                return;
-            }
-            self._pool.acquire().then(function (client) {
-                client.get(key, (err, reply) => {
-                    self._pool.release(client);
-                    if (err) {
-                        reject(err);
-                        console.error('memcache GetData Error: ' + err + key);
-                        return;
-                    }
-                    //qq��û�з���undef
-                    //if (reply == undefined) reply = null;
-                    //unde ��null��������!reply�ж�
-                    if (debug) {
-                        console.log("memcache78 get:" + key + " value:" + reply);
-                    }
-                    resolve(reply);
-                });
-            });
+    get(key_1) {
+        return __awaiter(this, arguments, void 0, function* (key, debug = false) {
+            return this.tbget(key, debug);
         });
     }
-    ;
+    set(key_1, value_1) {
+        return __awaiter(this, arguments, void 0, function* (key, value, sec = 86400) {
+            return this.tbset(key, value, sec);
+        });
+    }
+    add(key_1, value_1) {
+        return __awaiter(this, arguments, void 0, function* (key, value, sec = 86400) {
+            key += this.local;
+            yield this.handleError(this.client.add(key, value, { expires: sec }));
+        });
+    }
 }
 exports.default = MemCache78;
 //# sourceMappingURL=index.js.map
