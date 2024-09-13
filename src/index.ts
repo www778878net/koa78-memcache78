@@ -5,7 +5,15 @@ class MemCache78 {
 	private local: string;
 
 	constructor(config: any) {
-		const servers = config.host ? `${config.host}:${config.port || 11211}` : '127.0.0.1:11211';
+		console.log('MemCache78 constructor config:', config);
+		if (!config || typeof config !== 'object') {
+			throw new Error('Invalid configuration: config must be an object');
+		}
+
+		const host = config.host || '127.0.0.1';
+		const port = config.port || 11211;
+		const servers = `${host}:${port}`;
+
 		this.client = Client.create(servers, {
 			retries: 10,
 			retry_delay: 1000,
@@ -13,6 +21,8 @@ class MemCache78 {
 			poolSize: config.max || 10,
 		});
 		this.local = config.local || '';
+
+		console.log(`MemCache78 initialized with server: ${servers}`);
 	}
 
 	private async handleError<T>(promise: Promise<T>): Promise<T | null> {
@@ -37,15 +47,17 @@ class MemCache78 {
 		return null;
 	}
 
-	async tbset(key: string, value: any, sec: number = 86400): Promise<void> {
+	async tbset(key: string, value: any, sec: number = 86400): Promise<boolean> {
 		key += this.local;
 		const stringValue = JSON.stringify(value);
 		await this.handleError(this.client.set(key, stringValue, { expires: sec }));
+		return true;
 	}
 
-	async del(key: string): Promise<void> {
+	async del(key: string): Promise<boolean> {
 		key += this.local;
 		await this.handleError(this.client.delete(key));
+		return true;
 	}
 
 	async incr(key: string, sec: number = 86400, add: number = 1): Promise<number> {
@@ -63,7 +75,7 @@ class MemCache78 {
 		return this.tbget(key, debug);
 	}
 
-	async set(key: string, value: any, sec: number = 86400): Promise<void> {
+	async set(key: string, value: any, sec: number = 86400): Promise<boolean> {
 		return this.tbset(key, value, sec);
 	}
 

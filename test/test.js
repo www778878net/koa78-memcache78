@@ -7,6 +7,7 @@ console.log(process.argv)
 var fspath = process.argv[3]
 var config = loadjson(fspath);
 console.log(config)
+
 function loadjson(filepath) {
     var data;
     try {
@@ -18,19 +19,24 @@ function loadjson(filepath) {
     }
     return data;
 }
-let memcached78 = new MemCache78(config["memcached"]);
 
-describe('test null ', () => {
-    it(' return anything', async() => {
-        let testclient = new MemCache78(null)
-        let reback= await testclient.set("test", 1, 20) 
-        expect(reback).to.equal("");
-        //no catch err
-        //const result = 1;
-        //expect(result).to.equal(1);
-        //done(); // Í¨ÖªMocha²âÊÔ½áÊø
+console.log('Loaded config:', config);
+
+// ?????? config.memcached
+let memcached78 = new MemCache78(config);
+
+describe('test null config', () => {
+    it('should throw error', () => {
+        expect(() => new MemCache78(null)).to.throw('Invalid configuration: config must be an object');
     });
 });
+
+describe('test invalid config ', () => {
+    it(' should throw error', () => {
+        expect(() => new MemCache78(null)).to.throw('Invalid configuration: config must be an object');
+    });
+});
+
 describe('test set  ', () => {
     it(' return true',async () => { 
         let result=await memcached78.set("testitem", 1, 60) 
@@ -73,4 +79,9 @@ describe('test tbget  ', () => {
     });
 });
 
- 
+describe('test default config', () => {
+    it('should use default values', () => {
+        const memcache = new MemCache78({});
+        expect(memcache).to.be.an.instanceOf(MemCache78);
+    });
+});

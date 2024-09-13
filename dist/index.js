@@ -12,7 +12,13 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const memjs_1 = require("memjs");
 class MemCache78 {
     constructor(config) {
-        const servers = config.host ? `${config.host}:${config.port || 11211}` : '127.0.0.1:11211';
+        console.log('MemCache78 constructor config:', config);
+        if (!config || typeof config !== 'object') {
+            throw new Error('Invalid configuration: config must be an object');
+        }
+        const host = config.host || '127.0.0.1';
+        const port = config.port || 11211;
+        const servers = `${host}:${port}`;
         this.client = memjs_1.Client.create(servers, {
             retries: 10,
             retry_delay: 1000,
@@ -20,6 +26,7 @@ class MemCache78 {
             poolSize: config.max || 10,
         });
         this.local = config.local || '';
+        console.log(`MemCache78 initialized with server: ${servers}`);
     }
     handleError(promise) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -32,8 +39,8 @@ class MemCache78 {
             }
         });
     }
-    tbget(key_1) {
-        return __awaiter(this, arguments, void 0, function* (key, debug = false) {
+    tbget(key, debug = false) {
+        return __awaiter(this, void 0, void 0, function* () {
             key += this.local;
             const result = yield this.handleError(this.client.get(key));
             if (result && result.value) {
@@ -46,21 +53,23 @@ class MemCache78 {
             return null;
         });
     }
-    tbset(key_1, value_1) {
-        return __awaiter(this, arguments, void 0, function* (key, value, sec = 86400) {
+    tbset(key, value, sec = 86400) {
+        return __awaiter(this, void 0, void 0, function* () {
             key += this.local;
             const stringValue = JSON.stringify(value);
             yield this.handleError(this.client.set(key, stringValue, { expires: sec }));
+            return true;
         });
     }
     del(key) {
         return __awaiter(this, void 0, void 0, function* () {
             key += this.local;
             yield this.handleError(this.client.delete(key));
+            return true;
         });
     }
-    incr(key_1) {
-        return __awaiter(this, arguments, void 0, function* (key, sec = 86400, add = 1) {
+    incr(key, sec = 86400, add = 1) {
+        return __awaiter(this, void 0, void 0, function* () {
             key += this.local;
             const result = yield this.handleError(this.client.increment(key, add));
             if (result && result.value !== null) {
@@ -72,18 +81,18 @@ class MemCache78 {
             }
         });
     }
-    get(key_1) {
-        return __awaiter(this, arguments, void 0, function* (key, debug = false) {
+    get(key, debug = false) {
+        return __awaiter(this, void 0, void 0, function* () {
             return this.tbget(key, debug);
         });
     }
-    set(key_1, value_1) {
-        return __awaiter(this, arguments, void 0, function* (key, value, sec = 86400) {
+    set(key, value, sec = 86400) {
+        return __awaiter(this, void 0, void 0, function* () {
             return this.tbset(key, value, sec);
         });
     }
-    add(key_1, value_1) {
-        return __awaiter(this, arguments, void 0, function* (key, value, sec = 86400) {
+    add(key, value, sec = 86400) {
+        return __awaiter(this, void 0, void 0, function* () {
             key += this.local;
             yield this.handleError(this.client.add(key, value, { expires: sec }));
         });

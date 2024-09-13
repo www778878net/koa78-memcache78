@@ -4,11 +4,11 @@ declare class MemCache78 {
     constructor(config: any);
     private handleError;
     tbget(key: string, debug?: boolean): Promise<any>;
-    tbset(key: string, value: any, sec?: number): Promise<void>;
-    del(key: string): Promise<void>;
+    tbset(key: string, value: any, sec?: number): Promise<boolean>;
+    del(key: string): Promise<boolean>;
     incr(key: string, sec?: number, add?: number): Promise<number>;
     get(key: string, debug?: boolean): Promise<any>;
-    set(key: string, value: any, sec?: number): Promise<void>;
+    set(key: string, value: any, sec?: number): Promise<boolean>;
     add(key: string, value: any, sec?: number): Promise<void>;
 }
 export default MemCache78;
