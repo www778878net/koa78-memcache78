@@ -2,15 +2,20 @@
   "compilerOptions": {
     "module": "commonjs",
     "target": "es6",
-    "outDir": "./dist",
+    "outDir": "./dist",  // 确保这个目录与源文件目录不同
+    "rootDir": "./src",  // 添加这行,指定源文件目录
     "skipLibCheck": true,
     "noImplicitAny": false,
     "sourceMap": true,
     "strict": true,
-    "declaration": true  // 添加这一行
+    "declaration": true,
+    "declarationDir": "./dist/types"
   },
  
   "exclude": [
     "node_modules"
+  ],
+  "include": [
+    "src/**/*"  // 添加这行,明确指定要编译的文件
   ]
 }
