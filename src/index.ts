@@ -71,17 +71,29 @@ class MemCache78 {
 		}
 	}
 
-	async get(key: string, debug: boolean = false): Promise<any> {
-		return this.tbget(key, debug);
-	}
-
-	async set(key: string, value: any, sec: number = 86400): Promise<boolean> {
-		return this.tbset(key, value, sec);
-	}
-
-	async add(key: string, value: any, sec: number = 86400): Promise<void> {
+	async get(key: string, debug: boolean = false): Promise<string | null> {
 		key += this.local;
-		await this.handleError(this.client.add(key, value, { expires: sec }));
+		const result: MemcachedResponse | null = await this.handleError(this.client.get(key));
+		if (result && result.value) {
+			const reply = result.value.toString();
+			if (debug) {
+				console.log(`memcache78 get: ${key} value: ${reply}`);
+			}
+			return reply;
+		}
+		return null;
+	}
+
+	async set(key: string, value: string, sec: number = 86400): Promise<boolean> {
+		key += this.local;
+		await this.handleError(this.client.set(key, value, { expires: sec }));
+		return true;
+	}
+
+	async add(key: string, value: any, sec: number = 86400): Promise<boolean> {
+		key += this.local;
+		const result: MemcachedResponse | null = await this.handleError(this.client.add(key, value, { expires: sec }));
+		return result !== null;
 	}
 }
 
