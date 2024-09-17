@@ -39,7 +39,7 @@ describe('test invalid config ', () => {
 
 describe('test set  ', () => {
     it(' return true',async () => { 
-        let result=await memcached78.set("testitem", 1, 60) 
+        let result = await memcached78.set("testitem", "1", 60) 
         expect(result).to.be.true;
     });
 });
@@ -47,12 +47,13 @@ describe('test set  ', () => {
 describe('test get  ', () => {
     it(' return 1',async () => {
         let result = await memcached78.get("testitem") 
-        expect(result).to.equals(1);
+        expect(result).to.equals("1");
     });
 }); 
 
 describe('test incr  ', () => {
     it(' return 2',async () => {
+        await memcached78.set("testitem", "1", 60);
         let result = await memcached78.incr("testitem") 
         expect(result).to.equals(2);
     });

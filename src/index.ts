@@ -66,7 +66,7 @@ class MemCache78 {
 		if (result && result.value !== null) {
 			return result.value;
 		} else {
-			await this.tbset(key, 1, sec);
+			await this.set(key, '1', sec);
 			return 1;
 		}
 	}

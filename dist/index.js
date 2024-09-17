@@ -39,8 +39,8 @@ class MemCache78 {
             }
         });
     }
-    tbget(key_1) {
-        return __awaiter(this, arguments, void 0, function* (key, debug = false) {
+    tbget(key, debug = false) {
+        return __awaiter(this, void 0, void 0, function* () {
             key += this.local;
             const result = yield this.handleError(this.client.get(key));
             if (result && result.value) {
@@ -53,8 +53,8 @@ class MemCache78 {
             return null;
         });
     }
-    tbset(key_1, value_1) {
-        return __awaiter(this, arguments, void 0, function* (key, value, sec = 86400) {
+    tbset(key, value, sec = 86400) {
+        return __awaiter(this, void 0, void 0, function* () {
             key += this.local;
             const stringValue = JSON.stringify(value);
             yield this.handleError(this.client.set(key, stringValue, { expires: sec }));
@@ -68,21 +68,21 @@ class MemCache78 {
             return true;
         });
     }
-    incr(key_1) {
-        return __awaiter(this, arguments, void 0, function* (key, sec = 86400, add = 1) {
+    incr(key, sec = 86400, add = 1) {
+        return __awaiter(this, void 0, void 0, function* () {
             key += this.local;
             const result = yield this.handleError(this.client.increment(key, add));
             if (result && result.value !== null) {
                 return result.value;
             }
             else {
-                yield this.tbset(key, 1, sec);
+                yield this.set(key, '1', sec);
                 return 1;
             }
         });
     }
-    get(key_1) {
-        return __awaiter(this, arguments, void 0, function* (key, debug = false) {
+    get(key, debug = false) {
+        return __awaiter(this, void 0, void 0, function* () {
             key += this.local;
             const result = yield this.handleError(this.client.get(key));
             if (result && result.value) {
@@ -95,15 +95,15 @@ class MemCache78 {
             return null;
         });
     }
-    set(key_1, value_1) {
-        return __awaiter(this, arguments, void 0, function* (key, value, sec = 86400) {
+    set(key, value, sec = 86400) {
+        return __awaiter(this, void 0, void 0, function* () {
             key += this.local;
             yield this.handleError(this.client.set(key, value, { expires: sec }));
             return true;
         });
     }
-    add(key_1, value_1) {
-        return __awaiter(this, arguments, void 0, function* (key, value, sec = 86400) {
+    add(key, value, sec = 86400) {
+        return __awaiter(this, void 0, void 0, function* () {
             key += this.local;
             const result = yield this.handleError(this.client.add(key, value, { expires: sec }));
             return result !== null;
