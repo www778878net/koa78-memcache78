@@ -95,7 +95,7 @@ class MemCache78 {
         try {
             const result: MemcachedResponse = await this.client.add(key, value, { expires: sec });
             return result !== null;
-        } catch (error: unknown) {
+        } catch (error) {
             if (error instanceof Error && error.message.includes('NOT_STORED')) {
                 // 键已经存在
                 return false;

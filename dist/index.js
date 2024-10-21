@@ -105,8 +105,19 @@ class MemCache78 {
     add(key, value, sec = 86400) {
         return __awaiter(this, void 0, void 0, function* () {
             key += this.local;
-            const result = yield this.handleError(this.client.add(key, value, { expires: sec }));
-            return result !== null;
+            try {
+                const result = yield this.client.add(key, value, { expires: sec });
+                return result !== null;
+            }
+            catch (error) {
+                if (error instanceof Error && error.message.includes('NOT_STORED')) {
+                    // 键已经存在
+                    return false;
+                }
+                // 处理其他错误
+                yield this.handleError(Promise.reject(error));
+                return false;
+            }
         });
     }
 }
