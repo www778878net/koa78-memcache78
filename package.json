@@ -1,6 +1,6 @@
 {
   "name": "memcache78",
-  "version": "2.1.4",
+  "version": "2.1.5",
   "description": "koa78 memcache78",
   "main": "dist/index.js",
   "types": "dist/types/index.d.ts",
