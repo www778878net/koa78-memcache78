@@ -94,10 +94,10 @@ class MemCache78 {
         key += this.local;
         try {
             const result: MemcachedResponse = await this.client.add(key, value, { expires: sec });
-            console.log('Add result:', result);
+            //console.log('Add result:', result);
             return result;
         } catch (error) {
-            console.error('Error in add method:', error);
+            //console.error('Error in add method:', error);
             if (error instanceof Error && error.message.includes('NOT_STORED')) {
                 // 键已经存在
                 return false;
