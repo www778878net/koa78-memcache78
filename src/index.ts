@@ -93,7 +93,7 @@ class MemCache78 {
     async add(key: string, value: any, sec: number = 86400): Promise<boolean> {
         key += this.local;
         try {
-            const result: MemcachedResponse = await this.client.add(key, value, { expires: sec });
+            const result: MemcachedResponse = await this.client.add(key, String(value), { expires: sec });
             //console.log('Add result:', result);
             return result;
         } catch (error) {
